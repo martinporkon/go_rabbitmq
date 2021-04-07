@@ -8,7 +8,30 @@ import (
 )
 
 func main() {
-	server()
+	go client() // this is now a gorutine
+	go server() // the server is also now a gorutine
+	// to allow both functions to max temselves out
+	var a string
+	fmt.Scanln(&a)
+}
+
+func client() {
+	conn, ch, q := getQueue()
+	defer conn.Close()
+	defer ch.Close()
+
+	msgs, err := ch.Consume(q.Name, // name of the queue to get messages from
+		"",   // load balanced(1.25, 4m 52s, 3)
+		true, // autoAck bool
+		false,
+		false,
+		false,
+		nil)
+	failOnError(err, "failed to register a consumer")
+
+	for msg := range msgs {
+		log.Printf("Received message with message: %s", msg.Body)
+	}
 }
 
 func server() {
@@ -20,8 +43,11 @@ func server() {
 		ContentType: "text/plain", // rabbitmq sends data alwass as byte trains
 		Body:        []byte("Hello RabbitMQ"),
 	} // messages lifecycle
+	//for {// generates as fast as possible and gives a good benchmark
 
 	ch.Publish("", q.Name, false, false, msg) //"" does not have a specific name so the default exchange is used
+	//}use a VM for such problems
+	// not a persistence strate to rely on
 }
 
 func getQueue() (*amqp.Connection, *amqp.Channel, *amqp.Queue) {
