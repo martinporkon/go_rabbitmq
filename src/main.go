@@ -7,12 +7,12 @@ import (
 	"github.com/streadway/amqp"
 )
 
-func main() {
+func main() { // golint is yelling at me.
 	go client() // this is now a gorutine
 	go server() // the server is also now a gorutine
 	// to allow both functions to max temselves out
 	var a string
-	fmt.Scanln(&a)
+	fmt.Scanln(&a) // this keeps the main gorutine alive as others are busily publishing and receiving messages
 }
 
 func client() { // receive messages.
