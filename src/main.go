@@ -15,17 +15,23 @@ func main() {
 	fmt.Scanln(&a)
 }
 
-func client() {
+func client() { // receive messages.
 	conn, ch, q := getQueue()
-	defer conn.Close()
+	defer conn.Close() // close connection and channel when done with them
 	defer ch.Close()
 
-	msgs, err := ch.Consume(q.Name, // name of the queue to get messages from
-		"",   // load balanced(1.25, 4m 52s, 3)
-		true, // autoAck bool
-		false,
-		false,
-		false,
+	msgs, err := ch.Consume(q.Name, // name of the queue to get messages from, No exchange as excahnges are used only to publish messages to rabbitmq
+		"", // this idendities the connection to the queue uniquely. To determine who is listerning on the queue. This is importan when multiple clients and receiving messags from the same queue in a dircet exchange.
+		// rabbitmq will distribute the messages amongs the clients so that they are roughly load balanced.
+		// It can also be important if a client needs to cancel its connection since that lets rabbitmq know it should no longer try to send messages to that specific receiver.
+		// passing in an empty string rabbitmq will assign a value by itself since there is no specific need to track it
+		true, // autoAck flag indicates if we want to automatically acknowledge the sucessful receipt of a message
+		// Set to true normally so the server an reeive messages a quiicly as possible to conserve resources.
+		// If the call also updates a record in a database. False due to manually updating it. rabbitmq as a repository o ensure that entire transaciton is done and messaes are not lost before the entire trasaction is done
+		false, // exclusive flag is used to make sure the clien is the only consumer for this queue. If this is true an error will occur if other clients are already registered or if another client tries to listen to this queue later.
+		false, // noLocal flag prevets Rabbitmq fron sending messages to clients that are on the same connectino as the sender.
+		false, // nowait flag instructs rabbitmq to only return a pre-existing queue that matches the provided configuration. If a properly configured queue is not found on the server then the channel will receive an error
+		// flase because there isn't any on the server
 		nil)
 	failOnError(err, "failed to register a consumer")
 
