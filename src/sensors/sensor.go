@@ -66,7 +66,8 @@ func main() {
 			Timestamp: time.Now(),
 		}
 		// now the messages is prepared to be encoded for transmission
-		buf.Reset() // any initial data is removed and buffer pointer is set to the initial position
+		buf.Reset()               // any initial data is removed and buffer pointer is set to the initial position
+		enc = gob.NewEncoder(buf) // the encoder must be recreated every time it is going to be used or the bytes buffer cannot be used.
 		enc.Encode(reading)
 
 		msg := amqp.Publishing{
