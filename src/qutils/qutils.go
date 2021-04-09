@@ -8,6 +8,7 @@ import (
 )
 
 const SensorListQueue = "SensorList"
+const SensorDiscoveryExchange = "SensorDiscovery"
 
 func GetChannel(url string) (*amqp.Connection, *amqp.Channel) { // will return pointers for connection and channel
 	conn, err := amqp.Dial(url)
