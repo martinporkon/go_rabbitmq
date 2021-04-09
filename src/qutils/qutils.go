@@ -16,7 +16,7 @@ func GetChannel(url string) (*amqp.Connection, *amqp.Channel) { // will return p
 	return conn, ch
 }
 
-func getQueue(name string, ch *amqp.Channel) *amqp.Queue { // retursn a queue to get a refrence to a queue object
+func GetQueue(name string, ch *amqp.Channel) *amqp.Queue { // retursn a queue to get a refrence to a queue object
 	q, err := ch.QueueDeclare(
 		name,
 		false, // durable not, because it may not be too critical if one of the brokern messages will go down

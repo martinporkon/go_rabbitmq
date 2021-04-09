@@ -8,8 +8,11 @@ import (
 	"log"
 	"math/rand"
 	"rabbitmq_go/src/dto"
+	"rabbitmq_go/src/qutils"
 	"strconv"
 	"time"
+
+	"github.com/streadway/amqp"
 )
 
 var url = "amqp://guest:guest@localhost:5672"
@@ -27,6 +30,12 @@ var nom = (*max-*min)/2 + *min // nominal sensor value
 
 func main() {
 	flag.Parse()
+
+	conn, ch := qutils.GetChannel(url)
+	defer conn.Close() // defered calls to close the connection when we are doe with it
+	defer ch.Close()   // defered calls to close the connection when we are doe with it
+
+	dataQueue := qutils.GetQueue(*name, ch)
 
 	// 5 cycles/ sec = 200 milliseconds / cycle
 	dur, _ := time.ParseDuration(strconv.Itoa(1000/int(*freq)) + "ms")
@@ -47,6 +56,17 @@ func main() {
 		buf.Reset() // any initial data is removed and buffer pointer is set to the initial position
 		enc.Encode(reading)
 
+		msg := amqp.Publishing{
+			Body: buf.Bytes(),
+		}
+
+		ch.Publish(
+			"",             // name of the exchange, we are using the default direct exchange so no strings are required
+			dataQueue.Name, // routing key. reference to the dataQueue.Name is the more correct way. Key is the routing key for the queue
+			false,          // this will throw an error if there is no queue defined to receive he publishing
+			false,          // the immediate argument determines if the publish argument should trigger a failure of there aren't any consumers currently on this queue
+			// This can be set to false for two reasons. First we want rabbitmq to set things up if the coordinators are not running for any reason; and second; I could technically receive messages through the reference that I created earlier, so there is a consumer as far as rabbitmq is concerned
+			msg)
 		log.Printf("Reading sent. Value: %v\n", value)
 	}
 }
@@ -69,3 +89,9 @@ func calcValue() {
 
 // go run sensor.go --help
 // go run src\distributed\sensors\sensor\sensor.goz
+// remember RabbitMQ receives messages and exchanges and then uses their configuration and information within the message to
+// determine which queues to deliver to. That means that technically we only need to provide the queue's name or routing key when publishing
+// However, this is not enough to ensure that the queue with that routingkey actually exists
+// By declaring the queue here we can be sure that RabbitMQ has set it up properly and it will be ready for us to use
+// By sending the message off.
+// To kick the sensor off.
