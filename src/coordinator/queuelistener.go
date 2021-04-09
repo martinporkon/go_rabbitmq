@@ -96,3 +96,14 @@ func (ql *QueueListener) AddListener(msgs <-chan amqp.Delivery) { // receive onl
 }
 
 // Currently, our sensors publish the name of their data queue as soon as they come online. They are publishing to a fanout exchange, which is perfect for informing a lot of coordinators at the same time. However, if a coordinator starts up after a sensor, it currently has no way of knowing about it. To address this, I want to create a new exchange in the message broker. This will be a fanout exchange that is going to work in the opposite direction of the other message flows. In this case, a coordinator will make a discovery request to the exchange. That message will fanout to all of the sensors that will respond by publishing their data queue's name to the fanout exchange that we've been using. This setup is going to get some messages to the coordinators that aren't interested in it. But we're already filtering out redundant queue names in the coordinators, so I think that this will be just fine.
+
+func (ql *QueueListener) DiscoverSensors() {
+	ql.ch.ExchangeDeclare(
+		qutils.SensorDiscoveryExchange, // name string
+		"fanout",                       // kind string
+		false,                          // durable
+		false,                          // autoDelete. Event will be deleted if ther are no bindings present
+		false,                          // internal. Set to true if want this exchange to reject externl publishing requests. This can be used in advanced scenarious where exchanges can be bound together to form more compilcated topologies in the broker
+		false,
+		nil)
+}
