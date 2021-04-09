@@ -36,6 +36,17 @@ func main() {
 	defer ch.Close()   // defered calls to close the connection when we are doe with it
 
 	dataQueue := qutils.GetQueue(*name, ch)
+	sensorQueue := qutils.GetQueue(qutils.SensorListQueue, ch)
+
+	msg := amqp.Publishing{
+		Body: []byte(*name),
+	}
+	ch.Publish( // this will publish if new sensor will come online.
+		"",
+		sensorQueue.Name,
+		false,
+		false,
+		msg)
 
 	// 5 cycles/ sec = 200 milliseconds / cycle
 	dur, _ := time.ParseDuration(strconv.Itoa(1000/int(*freq)) + "ms")
@@ -95,3 +106,8 @@ func calcValue() {
 // By declaring the queue here we can be sure that RabbitMQ has set it up properly and it will be ready for us to use
 // By sending the message off.
 // To kick the sensor off.
+
+// Is to handle the issue of letting the coordinators know when a sensor comes online and starts to send readings.
+// Since each sensor will create a new queue it will be impossible for the coordinators to efficiently discover them
+// without a little bit of help. The key to having dynamic queue names in this application is that I will have one queue that is
+// well known thoughout the entire applicaiton and can be used to send the name of each queue as it is created.
