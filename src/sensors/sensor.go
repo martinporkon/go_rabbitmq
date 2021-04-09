@@ -36,14 +36,16 @@ func main() {
 	defer ch.Close()   // defered calls to close the connection when we are doe with it
 
 	dataQueue := qutils.GetQueue(*name, ch)
-	sensorQueue := qutils.GetQueue(qutils.SensorListQueue, ch)
+	//sensorQueue := qutils.GetQueue(qutils.SensorListQueue, ch) this was a queue that reports if messages are received
+
+	// This is now going to be the responsiblity of the consumers since the will each need to create their own queue to listen on this exchange
 
 	msg := amqp.Publishing{
 		Body: []byte(*name),
 	}
 	ch.Publish( // this will publish if new sensor will come online.
-		"",
-		sensorQueue.Name,
+		"amqp.fanout", // it is now reporting a value
+		"",            // sensorQueue.Name. This is now "" as this key is not going to be used by the fanout exchanges to determine where a message goes.
 		false,
 		false,
 		msg)
