@@ -2,12 +2,17 @@ package main
 
 import (
 	// generating simulated data
+	"bytes"
+	"encoding/gob"
 	"flag"
 	"log"
 	"math/rand"
+	"rabbitmq_go/src/dto"
 	"strconv"
 	"time"
 )
+
+var url = "amqp://guest:guest@localhost:5672"
 
 var name = flag.String("name", "sensor", "name of the sensor")
 var freq = flag.Uint("freq", 5, "update frequency in cucles/sec")
@@ -28,9 +33,21 @@ func main() {
 
 	signal := time.Tick(dur)
 
+	buf := new(bytes.Buffer)
+	enc := gob.NewEncoder(buf)
+
 	for range signal {
 		calcValue()
-		log.Printf("Reading send. Value: %v\n", value)
+		reading := dto.SensorMessage{
+			Name:      *name,
+			Value:     value,
+			Timestamp: time.Now(),
+		}
+		// now the messages is prepared to be encoded for transmission
+		buf.Reset() // any initial data is removed and buffer pointer is set to the initial position
+		enc.Encode(reading)
+
+		log.Printf("Reading sent. Value: %v\n", value)
 	}
 }
 
@@ -50,5 +67,5 @@ func calcValue() {
 	value += r.Float64()*(maxStep-minStep) + minStep
 }
 
-// go run sensor.go --helps
-// go run src\distributed\sensors\sensor\sensor.go
+// go run sensor.go --help
+// go run src\distributed\sensors\sensor\sensor.goz
