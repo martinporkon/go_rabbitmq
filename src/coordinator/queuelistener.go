@@ -56,7 +56,10 @@ func (ql *QueueListener) ListenForNewSource() { // ql.ch <- object declaration
 
 	ql.DiscoverSensors() // specifically here. Because this is the first place we can be guaranteed that the coodinator is listening for messages about the sensor's routes
 
+	fmt.Println("listening for new sources")
 	for msg := range msgs { // this now indicates that a new sensor has come online and it is ready to send readings to the system
+		fmt.Println("new source discovered")
+		ql.ea.PublishEvent("DataSourceDiscovered", string(msg.Body))
 		sourceChan, _ := ql.ch.Consume( // channel consumer method to get access to that sensors queue
 			string(msg.Body), // queue string,
 			"",               // consumer string,
@@ -117,3 +120,5 @@ func (ql *QueueListener) DiscoverSensors() {
 
 // By allowing the coordinator to pull the sensors for their presence, By adding this we can be sure that each coordinator will be aware
 // of each sensor in the system, regardless when they start up.
+
+// DATA LOGIC AND OTHER DATA SOURCES AND BUSINESS LOGIC IS CENTRALIZED IN THE COORDINATORS AND THE SENSORS ACCORDINGLY DO WHAT THEY ARE ASKED
