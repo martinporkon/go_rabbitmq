@@ -35,15 +35,15 @@ func main() {
 	defer conn.Close() // defered calls to close the connection when we are doe with it
 	defer ch.Close()   // defered calls to close the connection when we are doe with it
 
-	dataQueue := qutils.GetQueue(*name, ch)
+	dataQueue := qutils.GetQueue(*name, ch, false) // we want them to hang around
 	//sensorQueue := qutils.GetQueue(qutils.SensorListQueue, ch) this was a queue that reports if messages are received
 
 	// This is now going to be the responsiblity of the consumers since the will each need to create their own queue to listen on this exchange
 
 	publishQueueName(ch)
 
-	discoveryQueue := qutils.GetQueue("", ch)
-	ch.QueueBind( // this now receives notifications when the coordinators make a discovery request
+	discoveryQueue := qutils.GetQueue("", ch, true) // clean up the old ones, as each new sensor will spin up a new queue ever time
+	ch.QueueBind(                                   // this now receives notifications when the coordinators make a discovery request
 		discoveryQueue.Name,
 		"",
 		qutils.SensorDiscoveryExchange,

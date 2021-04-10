@@ -35,7 +35,7 @@ func NewQueueListener() *QueueListener { // constructor function
 }
 
 func (ql *QueueListener) ListenForNewSource() { // ql.ch <- object declaration
-	q := qutils.GetQueue("", ql.ch) // RabbitMQ will see that there is no name for the queue and will create the name by itself. So there are no conflicts with queue naming.
+	q := qutils.GetQueue("", ql.ch, true) // RabbitMQ will see that there is no name for the queue and will create the name by itself. So there are no conflicts with queue naming.
 	// By default when queues are created. They are bound to the default exchange.
 	// Now it will be he fanout exchange. So we will need o rebind it again.
 	ql.ch.QueueBind(

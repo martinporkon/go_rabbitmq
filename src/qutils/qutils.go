@@ -19,11 +19,11 @@ func GetChannel(url string) (*amqp.Connection, *amqp.Channel) { // will return p
 	return conn, ch
 }
 
-func GetQueue(name string, ch *amqp.Channel) *amqp.Queue { // retursn a queue to get a refrence to a queue object
+func GetQueue(name string, ch *amqp.Channel, autodelete bool) *amqp.Queue { // retursn a queue to get a refrence to a queue object
 	q, err := ch.QueueDeclare(
 		name,
-		false, // durable not, because it may not be too critical if one of the brokern messages will go down
-		false, // autoDelete false as the sensor readings would be deleted if there is noo active listeners
+		false,      // durable not, because it may not be too critical if one of the brokern messages will go down
+		autodelete, // autoDelete false as the sensor readings would be deleted if there is noo active listeners
 		// this might happen if we are patching the coordinators
 		false, // this is the only connection o be able to work with this queue
 		// since we need the sensor and coordinators to be able to access the queue we will use false here as well
@@ -42,3 +42,6 @@ func failOnError(err error, msg string) { // package level failOnError function
 		panic(fmt.Sprintf("%s: %s", msg, err))
 	}
 }
+
+// We must remember to delete the queue after each time the queue is tempraryly used by the sensor.
+// Although there is a more easier wa to do this.
