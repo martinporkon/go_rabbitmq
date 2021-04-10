@@ -40,15 +40,17 @@ func main() {
 
 	// This is now going to be the responsiblity of the consumers since the will each need to create their own queue to listen on this exchange
 
-	msg := amqp.Publishing{
-		Body: []byte(*name),
-	}
-	ch.Publish( // this will publish if new sensor will come online.
-		"amqp.fanout", // it is now reporting a value
-		"",            // sensorQueue.Name. This is now "" as this key is not going to be used by the fanout exchanges to determine where a message goes.
+	publishQueueName(ch)
+
+	discoveryQueue := qutils.GetQueue("", ch)
+	ch.QueueBind( // this now receives notifications when the coordinators make a discovery request
+		discoveryQueue.Name,
+		"",
+		qutils.SensorDiscoveryExchange,
 		false,
-		false,
-		msg)
+		nil)
+
+	go listenForDiscoverRequests(discoveryQueue.Name, ch) // By making this Gorutine, it will be available whenever a request comes in without blocking the behaviour of the rest of the system
 
 	// 5 cycles/ sec = 200 milliseconds / cycle
 	dur, _ := time.ParseDuration(strconv.Itoa(1000/int(*freq)) + "ms")
@@ -114,3 +116,31 @@ func calcValue() {
 // Since each sensor will create a new queue it will be impossible for the coordinators to efficiently discover them
 // without a little bit of help. The key to having dynamic queue names in this application is that I will have one queue that is
 // well known thoughout the entire applicaiton and can be used to send the name of each queue as it is created.
+
+func publishQueueName(ch *amqp.Channel) {
+	msg := amqp.Publishing{
+		Body: []byte(*name),
+	}
+	ch.Publish( // this will publish if new sensor will come online.
+		"amqp.fanout", // it is now reporting a value
+		"",            // sensorQueue.Name. This is now "" as this key is not going to be used by the fanout exchanges to determine where a message goes.
+		false,
+		false,
+		msg)
+}
+
+func listenForDiscoverRequests(name string, ch *amqp.Channel) { // channel to get access to the queue
+	msgs, _ := ch.Consume(
+		name,
+		"",
+		true,
+		false,
+		false,
+		false,
+		nil)
+
+	for range msgs {
+		// using the message as a trigger
+		publishQueueName(ch)
+	}
+}

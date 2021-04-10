@@ -54,6 +54,8 @@ func (ql *QueueListener) ListenForNewSource() { // ql.ch <- object declaration
 		false,  // noWait bool,
 		nil)    // args amqp.table)
 
+	ql.DiscoverSensors() // specifically here. Because this is the first place we can be guaranteed that the coodinator is listening for messages about the sensor's routes
+
 	for msg := range msgs { // this now indicates that a new sensor has come online and it is ready to send readings to the system
 		sourceChan, _ := ql.ch.Consume( // channel consumer method to get access to that sensors queue
 			string(msg.Body), // queue string,
@@ -107,3 +109,11 @@ func (ql *QueueListener) DiscoverSensors() {
 		false,
 		nil)
 }
+
+// go build src\..\..\..\sensors\sensor.go
+// start sensor -freq=1 <- one cycle per second
+// start a coordinator
+// fire up another coordinator
+
+// By allowing the coordinator to pull the sensors for their presence, By adding this we can be sure that each coordinator will be aware
+// of each sensor in the system, regardless when they start up.
